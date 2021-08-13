@@ -1,9 +1,32 @@
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, Response } from 'express'
+import { verify } from 'jsonwebtoken'
 
+interface IPayload {
+  sub: string
+}
 
 export function ensureAuthenticated(
-    request: Request,
-    response: Response,
-    next: NextFunction) {
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) {
+  const authToken = request.headers.authorization
 
+  if (!authToken)
+    return response.status(401).end({ message: 'Token is missing' })
+
+  const [, token] = authToken.split(' ')
+
+  try {
+    const { sub } = verify(
+      token,
+      'a2860f2a6f27320b0d04be219d5f3490',
+    ) as IPayload
+
+    request.user_id = sub
+
+    return next()
+  } catch (error) {
+    return response.status(401).end({ message: 'Token is invalid or expired' })
+  }
 }
